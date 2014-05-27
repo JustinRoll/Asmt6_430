@@ -11,36 +11,49 @@
 numV *interp(void *e);
 
 numV* evalBinop (binopC *binop) {
-   numV *val = malloc(sizeof(numV));
-   
+   numV *numV1, *numV2, *val = malloc(sizeof(numV));
+   char *msg = malloc(5);
+   strcpy(msg, "numV");
+
+   val->type = msg;
    if (strcmp(binop->operator, "+") == 0) {
-      val->numVal = *((double *) binop->bozor1) +  *((double *) binop->bozor2);
+      numV1 = interp(binop->bozor1);
+      numV2 = interp(binop->bozor2);
+      val->numVal = numV1->numVal + numV2->numVal;
       //note, must eval these binops later
    }
    else if (strcmp(binop->operator, "-") == 0) {
-      val->numVal = *((double *) binop->bozor1) -  *((double *) binop->bozor2);
+      numV1 = interp(binop->bozor1);
+      numV2 = interp(binop->bozor2);
+      val->numVal = numV1->numVal - numV2->numVal;
    }
    else if (strcmp(binop->operator, "*") == 0) {
-      val->numVal = *((double *) binop->bozor1) *  *((double *) binop->bozor2);
+      numV1 = interp(binop->bozor1);
+      numV2 = interp(binop->bozor2);
+      val->numVal = numV1->numVal * numV2->numVal;
    }
    else if (strcmp(binop->operator, "/") == 0) {
-      
-      val->numVal = *((double *) binop->bozor1) /  *((double *) binop->bozor2);
+      numV1 = interp(binop->bozor1);
+      numV2 = interp(binop->bozor2);
+      val->numVal = numV1->numVal / numV2->numVal;
    }
    else if (strcmp(binop->operator, "<=") == 0) {
-      
-      val->numVal = *((double *) binop->bozor1) <=  *((double *) binop->bozor2);
+      numV1 = interp(binop->bozor1);
+      numV2 = interp(binop->bozor2);
+      val->numVal = numV1->numVal <= numV2->numVal;
+
    }
    else if (strcmp(binop->operator, "eq?") == 0) {
-   
-      val->numVal = *((double *) binop->bozor1) ==  *((double *) binop->bozor2);
+      numV1 = interp(binop->bozor1);
+      numV2 = interp(binop->bozor2);
+      val->numVal = numV1->numVal == numV2->numVal;
    }
 
    return val;
 }
 
 void* evalIfC(ifC* ifc) {
-   if (interp(ifc->test)->numVal == 1) {
+   if (interp(ifc->test)->numVal) {
       return ifc->then;
    }
    else 
@@ -76,28 +89,50 @@ numV *interp(void *e) {
   return NULL;
 }
 
+double serialize(numV *n) {
+  return n->numVal;
+}
+
 int main(int argc, char const* argv[])
 {
-  numC *e = malloc(sizeof(numC));
-  makeString(e->type, "numC");
-  e->numVal = 1;
+  // test numC interp
+  printf("** Testing numC interp **\n");
+  numC *n = malloc(sizeof(numC));
+  makeString(n->type, "numC");
+  n->numVal = 3.14;
+  assert(3.14 == serialize(interp(n)));
 
-  numC *f = malloc(sizeof(numC));
-  makeString(f->type, "numC");
-  f->numVal = 0;
 
-  numC *g = malloc(sizeof(numC));
-  makeString(g->type, "numC");
-  g->numVal = -1;
+  // test boolC interp
+  printf("** Testing boolC interp **\n");
+  boolC *b = malloc(sizeof(boolC));
+  makeString(b->type, "boolC");
+  b->val = 0;
+  assert(0 == serialize(interp(b)));
+  b->val = 1;
+  assert(1 == serialize(interp(b)));
 
+
+  // test ifC interp
+  printf("** Testing ifC interp **\n");
   ifC *i = malloc(sizeof(ifC));
   makeString(i->type, "ifC");
-  i->test = e;
-  i->then = f;
-  i->els = g;
 
+  numC *x = malloc(sizeof(numC));
+  makeString(x->type, "numC");
+  x->numVal = 5;
 
+  numC *y = malloc(sizeof(numC));
+  makeString(y->type, "numC");
+  y->numVal = -5;
 
-  printf("%lf\n", interp(i)->numVal);
+  i->test = b;
+  i->then = x;
+  i->els = y;
+
+  assert(5 == serialize(interp(i)));
+  b->val = 0;
+  assert(-5 == serialize(interp(i)));
+
   return 0;
 }
